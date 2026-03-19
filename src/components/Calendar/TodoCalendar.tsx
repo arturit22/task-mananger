@@ -2,15 +2,25 @@ import { useState } from 'react';
 import { Calendar, Modal, Button, Input, message, Checkbox, List, Badge } from 'antd';
 import type { Dayjs } from 'dayjs';
 import type { TodoItem } from '../../types/todo';
+import { useTodoStore } from '../../store/todoStore';
 
 export default function TodoCalendar() {
-  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const { todos, addTodo, toggleTodo, deleteTodo } = useTodoStore();
+
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTodoText, setNewTodoText] = useState('');
 
-  const getTodosForSelectedDate = (): TodoItem[] => {
-    const selectedDateStr = selectedDate.toISOString().split('T')[0];
+  const getTodosForSelectedDate = (date: Date): TodoItem[] => {
+    const dateStr = date.toISOString().split('T')[0];
+    return todos.filter((todo) => {
+      const todoDateStr = new Date(todo.date).toISOString().split('T')[0];
+      return todoDateStr === dateStr;
+    });
+  };
+
+  const getTodosCountForDate = (date: Dayjs): TodoItem[] => {
+    const selectedDateStr = date.format('YYYY-MM-DD');
 
     return todos.filter((todo) => {
       const todoDateStr = new Date(todo.date).toISOString().split('T')[0];
@@ -31,40 +41,8 @@ export default function TodoCalendar() {
     });
   };
 
-  const addTodo = () => {
-    if (!newTodoText.trim()) {
-      message.warning('Введите задачу');
-      return;
-    }
-
-    const newTodo: TodoItem = {
-      id: Date.now().toString(),
-      text: newTodoText,
-      completed: false,
-      date: selectedDate.toISOString(),
-    };
-
-    setTodos([...todos, newTodo]);
-    setNewTodoText('');
-    message.success('Задача успешно добавлена');
-  };
-
-  const toggleTodo = (id: string) => {
-    setTodos(
-      todos.map((todo) => (todo.id === id ? { ...todo, completed: !todo.completed } : todo))
-    );
-  };
-
-  const getTodosforDate = (date: Dayjs): TodoItem[] => {
-    const dateStr = date.format('YYYY-MM-DD');
-    return todos.filter((todo) => {
-      const todoDateStr = new Date(todo.date).toISOString().split('T')[0];
-      return dateStr === todoDateStr;
-    });
-  };
-
   const dateCellRender = (date: Dayjs) => {
-    const todosForDate = getTodosforDate(date);
+    const todosForDate = getTodosCountForDate(date);
     if (todosForDate.length === 0) return null;
 
     const completedCount = todosForDate.filter((t) => t.completed).length;
@@ -80,12 +58,21 @@ export default function TodoCalendar() {
     );
   };
 
-  const deleteTodo = (id: string) => {
-    setTodos(todos.filter((todo) => todo.id !== id));
-    message.success('Здача удалена');
+  const handleAddTodo = () => {
+    if (!newTodoText.trim()) {
+      message.warning('Введите текст задачи');
+      return;
+    }
+
+    addTodo(newTodoText, selectedDate);
+    setNewTodoText('');
   };
 
-  const todoForSelectedDate = getTodosForSelectedDate();
+  const handleDeleteTodo = (id: string) => {
+    deleteTodo(id);
+  };
+
+  const todoForSelectedDate = getTodosForSelectedDate(selectedDate);
 
   return (
     <div className="flex my-20">
@@ -100,6 +87,7 @@ export default function TodoCalendar() {
         <div className="flex flex-col gap-4">
           {todoForSelectedDate.length > 0 ? (
             <List
+              key={todoForSelectedDate.length}
               dataSource={todoForSelectedDate}
               renderItem={(todo) => (
                 <List.Item
@@ -111,7 +99,7 @@ export default function TodoCalendar() {
                       type="text"
                       danger
                       className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => deleteTodo(todo.id)}
+                      onClick={() => handleDeleteTodo(todo.id)}
                     >
                       Удалить
                     </Button>,
@@ -137,9 +125,9 @@ export default function TodoCalendar() {
             placeholder="Введите задачу"
             value={newTodoText}
             onChange={(e) => setNewTodoText(e.target.value)}
-            onPressEnter={addTodo}
+            onPressEnter={handleAddTodo}
           />
-          <Button type="primary" onClick={addTodo}>
+          <Button type="primary" onClick={handleAddTodo}>
             Добавить
           </Button>
         </div>
