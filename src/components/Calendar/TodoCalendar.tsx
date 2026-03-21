@@ -1,9 +1,30 @@
 import React, { useState } from 'react';
-import { Calendar, Modal, Button, Input, message, Checkbox, List, Badge, Space, Popconfirm } from 'antd';
+import {
+  Calendar,
+  Modal,
+  Button,
+  Input,
+  message,
+  Checkbox,
+  List,
+  Badge,
+  Space,
+  Popconfirm,
+  Select,
+  Tag,
+} from 'antd';
 import type { Dayjs } from 'dayjs';
 import type { TodoItem } from '../../types/todo';
 import { useTodoStore } from '../../store/todoStore';
 import { CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
+
+const { Option } = Select;
+
+const priorityColors = {
+  low: { bg: '#52c41a', text: 'white', label: '🟢 Низкий' },
+  medium: { bg: '#faad14', text: 'white', label: '🟡 Средний' },
+  high: { bg: '#ff4d4f', text: 'white', label: '🔴 Высокий' },
+};
 
 export default function TodoCalendar() {
   const { todos, addTodo, toggleTodo, deleteTodo, updateTodo } = useTodoStore();
@@ -11,9 +32,11 @@ export default function TodoCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTodoText, setNewTodoText] = useState('');
+  const [NewTodoPriority, setNewTodoPriority] = useState<'low' | 'medium' | 'high'>('low');
 
-  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
+  const [editingPriority, setEditingPriority] = useState<'low' | 'medium' | 'high'>('low');
 
   const getTodosForSelectedDate = (date: Date): TodoItem[] => {
     const dateStr = date.toISOString().split('T')[0];
@@ -70,25 +93,23 @@ export default function TodoCalendar() {
       return;
     }
 
-    addTodo(newTodoText, selectedDate);
+    addTodo(newTodoText, selectedDate, NewTodoPriority);
     setNewTodoText('');
+    setNewTodoPriority('low');
   };
 
   const startEditing = (todo: TodoItem) => {
     setEditingId(todo.id);
     setEditingText(todo.text);
+    setEditingPriority(todo.priority);
   };
 
   const saveEditing = () => {
     if (editingId && editingText.trim()) {
-      console.log('вызываем store')
-      updateTodo(editingId, editingText);
-      console.log('Сбрасываем состояние')
+      updateTodo(editingId, editingText, editingPriority);
       setEditingId(null);
       setEditingText('');
-      console.log('Редактирование завершено')
     } else {
-      console.log('Ошибка')
       message.warning('Введите текст задачи');
     }
   };
@@ -103,10 +124,15 @@ export default function TodoCalendar() {
       saveEditing();
     } else if (e.key === 'Escape') {
       cancelEditing();
-    };
+    }
   };
 
   const todoForSelectedDate = getTodosForSelectedDate(selectedDate);
+
+  const sortedTodos = [...todoForSelectedDate].sort((a, b) => {
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    return priorityOrder[a.priority] - priorityOrder[b.priority];
+  });
 
   return (
     <div className="flex my-20">
@@ -114,38 +140,80 @@ export default function TodoCalendar() {
       <Modal
         title={`Задачи на ${formatDate(selectedDate)}`}
         open={isModalOpen}
-        onCancel={() => { setIsModalOpen(false), setEditingId(null) }}
+        onCancel={() => {
+          (setIsModalOpen(false), setEditingId(null));
+        }}
         width={500}
         footer={null}
       >
         <div className="flex flex-col gap-4">
-          {todoForSelectedDate.length > 0 ? (
+          {sortedTodos.length > 0 ? (
             <List
               key={todoForSelectedDate.length}
-              dataSource={todoForSelectedDate}
+              dataSource={sortedTodos}
               renderItem={(todo) => (
                 <List.Item
                   key={todo.id}
                   className="hover:bg-gray-50 transition-colors group"
                   actions={[
-
                     editingId === todo.id ? (
                       <Space>
-                        <Button type='text' icon={<CheckOutlined />} onClick={saveEditing} />
-                        <Button type='text' icon={<CloseOutlined />} onClick={cancelEditing} />
+                        <Button type="text" icon={<CheckOutlined />} onClick={saveEditing} />
+                        <Button type="text" icon={<CloseOutlined />} onClick={cancelEditing} />
                       </Space>
                     ) : (
                       <Space>
-                        <Button type='text' icon={<EditOutlined />} onClick={() => startEditing(todo)} />
-                        <Popconfirm title="Удалить задачу?" onConfirm={() => deleteTodo(todo.id)} okText="Да" cancelText="Нет">
-                          <Button type='text' danger icon={<DeleteOutlined />} />
+                        <Button
+                          type="text"
+                          icon={<EditOutlined />}
+                          onClick={() => startEditing(todo)}
+                        />
+                        <Popconfirm
+                          title="Удалить задачу?"
+                          onConfirm={() => deleteTodo(todo.id)}
+                          okText="Да"
+                          cancelText="Нет"
+                        >
+                          <Button type="text" danger icon={<DeleteOutlined />} />
                         </Popconfirm>
                       </Space>
                     ),
                   ]}
                 >
+                  <Tag
+                    color={
+                      todo.priority === 'low'
+                        ? 'green'
+                        : todo.priority === 'medium'
+                          ? 'yellow'
+                          : 'red'
+                    }
+                  >
+                    {todo.priority === 'low'
+                      ? 'Низкий'
+                      : todo.priority === 'medium'
+                        ? 'Средний'
+                        : 'Высокий'}
+                  </Tag>
+
                   {editingId === todo.id ? (
-                    <Input value={editingText} onChange={(e) => setEditingText(e.target.value)} onKeyDown={handleEditKeyPress} autoFocus size='small' />
+                    <div>
+                      <Input
+                        value={editingText}
+                        onChange={(e) => setEditingText(e.target.value)}
+                        onKeyDown={handleEditKeyPress}
+                        autoFocus
+                        size="small"
+                      />
+                      <Select
+                        value={editingPriority}
+                        onChange={(value) => setEditingPriority(value)}
+                      >
+                        <Option value="low">🟢 Низкий</Option>
+                        <Option value="medium">🟡 Средний</Option>
+                        <Option value="high">🔴 Высокий</Option>
+                      </Select>
+                    </div>
                   ) : (
                     <Checkbox checked={todo.completed} onChange={() => toggleTodo(todo.id)}>
                       <span
@@ -170,6 +238,11 @@ export default function TodoCalendar() {
             onChange={(e) => setNewTodoText(e.target.value)}
             onPressEnter={handleAddTodo}
           />
+          <Select value={NewTodoPriority} onChange={setNewTodoPriority}>
+            <Option value="low">🟢 Низкий</Option>
+            <Option value="medium">🟡 Средний</Option>
+            <Option value="high">🔴 Высокий</Option>
+          </Select>
           <Button type="primary" onClick={handleAddTodo}>
             Добавить
           </Button>

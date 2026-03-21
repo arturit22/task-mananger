@@ -5,10 +5,10 @@ import { message } from 'antd';
 
 interface TodoStore {
   todos: TodoItem[];
-  addTodo: (text: string, date: Date) => void;
+  addTodo: (text: string, date: Date, priority?: 'high' | 'medium' | 'low') => void;
   toggleTodo: (id: string) => void;
   deleteTodo: (id: string) => void;
-  updateTodo: (id: string, newText: string) => void;
+  updateTodo: (id: string, newText: string, priority?: 'high' | 'medium' | 'low') => void;
 }
 
 export const useTodoStore = create<TodoStore>()(
@@ -16,19 +16,25 @@ export const useTodoStore = create<TodoStore>()(
     (set) => ({
       todos: [],
 
-      addTodo: (text: string, date: Date) => {
+      addTodo: (text: string, date: Date, priority: 'high' | 'medium' | 'low' = 'low') => {
         const newTodo: TodoItem = {
           id: Date.now().toString(),
           text,
           completed: false,
           date: date.toISOString(),
+          priority,
         };
 
         set((state) => ({
           todos: [...state.todos, newTodo],
         }));
 
-        message.success('Задача добавлена');
+        const priorityText = {
+          low: '🟢 Низкий',
+          medium: '🟡 Средний',
+          high: '🔴 Высокий ',
+        };
+        message.success(`Задача добавлена (${priorityText[priority]})`);
       },
 
       toggleTodo: (id: string) => {
@@ -57,16 +63,18 @@ export const useTodoStore = create<TodoStore>()(
         message.warning('Задача удалена');
       },
 
-      updateTodo: (id: string, newText: string) => {
+      updateTodo: (id: string, newText: string, newPriority?: 'low' | 'medium' | 'high') => {
         if (!newText.trim()) {
           message.warning('Введите задачу');
           return;
         }
 
         set((state) => ({
-          todos: state.todos.map((todo) => 
-          todo.id === id ? { ...todo, text: newText }: todo
-        ),
+          todos: state.todos.map((todo) =>
+            todo.id === id
+              ? { ...todo, text: newText, ...(newPriority && { priority: newPriority }) }
+              : todo
+          ),
         }));
 
         message.success('Задача отредактирована');

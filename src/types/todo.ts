@@ -4,5 +4,5 @@ export interface TodoItem {
   completed: boolean;
   date: string;
   createdAt?: string;
-  priority?: string;
+  priority: 'low' | 'medium' | 'high';
 }
