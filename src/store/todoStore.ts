@@ -8,6 +8,7 @@ interface TodoStore {
   addTodo: (text: string, date: Date) => void;
   toggleTodo: (id: string) => void;
   deleteTodo: (id: string) => void;
+  updateTodo: (id: string, newText: string) => void;
 }
 
 export const useTodoStore = create<TodoStore>()(
@@ -54,6 +55,21 @@ export const useTodoStore = create<TodoStore>()(
           todos: state.todos.filter((todo) => todo.id !== id),
         }));
         message.warning('Задача удалена');
+      },
+
+      updateTodo: (id: string, newText: string) => {
+        if (!newText.trim()) {
+          message.warning('Введите задачу');
+          return;
+        }
+
+        set((state) => ({
+          todos: state.todos.map((todo) => 
+          todo.id === id ? { ...todo, text: newText }: todo
+        ),
+        }));
+
+        message.success('Задача отредактирована');
       },
     }),
     {

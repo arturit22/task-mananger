@@ -1,15 +1,19 @@
-import { useState } from 'react';
-import { Calendar, Modal, Button, Input, message, Checkbox, List, Badge } from 'antd';
+import React, { useState } from 'react';
+import { Calendar, Modal, Button, Input, message, Checkbox, List, Badge, Space, Popconfirm } from 'antd';
 import type { Dayjs } from 'dayjs';
 import type { TodoItem } from '../../types/todo';
 import { useTodoStore } from '../../store/todoStore';
+import { CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 
 export default function TodoCalendar() {
-  const { todos, addTodo, toggleTodo, deleteTodo } = useTodoStore();
+  const { todos, addTodo, toggleTodo, deleteTodo, updateTodo } = useTodoStore();
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTodoText, setNewTodoText] = useState('');
+
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingText, setEditingText] = useState('');
 
   const getTodosForSelectedDate = (date: Date): TodoItem[] => {
     const dateStr = date.toISOString().split('T')[0];
@@ -31,6 +35,8 @@ export default function TodoCalendar() {
   const handleDateClick = (date: Dayjs) => {
     setSelectedDate(date.toDate());
     setIsModalOpen(true);
+    setEditingId(null);
+    setEditingText('');
   };
 
   const formatDate = (date: Date): string => {
@@ -68,8 +74,36 @@ export default function TodoCalendar() {
     setNewTodoText('');
   };
 
-  const handleDeleteTodo = (id: string) => {
-    deleteTodo(id);
+  const startEditing = (todo: TodoItem) => {
+    setEditingId(todo.id);
+    setEditingText(todo.text);
+  };
+
+  const saveEditing = () => {
+    if (editingId && editingText.trim()) {
+      console.log('вызываем store')
+      updateTodo(editingId, editingText);
+      console.log('Сбрасываем состояние')
+      setEditingId(null);
+      setEditingText('');
+      console.log('Редактирование завершено')
+    } else {
+      console.log('Ошибка')
+      message.warning('Введите текст задачи');
+    }
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditingText('');
+  };
+
+  const handleEditKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      saveEditing();
+    } else if (e.key === 'Escape') {
+      cancelEditing();
+    };
   };
 
   const todoForSelectedDate = getTodosForSelectedDate(selectedDate);
@@ -80,7 +114,7 @@ export default function TodoCalendar() {
       <Modal
         title={`Задачи на ${formatDate(selectedDate)}`}
         open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
+        onCancel={() => { setIsModalOpen(false), setEditingId(null) }}
         width={500}
         footer={null}
       >
@@ -94,27 +128,36 @@ export default function TodoCalendar() {
                   key={todo.id}
                   className="hover:bg-gray-50 transition-colors group"
                   actions={[
-                    <Button
-                      key={todo.id}
-                      type="text"
-                      danger
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => handleDeleteTodo(todo.id)}
-                    >
-                      Удалить
-                    </Button>,
+
+                    editingId === todo.id ? (
+                      <Space>
+                        <Button type='text' icon={<CheckOutlined />} onClick={saveEditing} />
+                        <Button type='text' icon={<CloseOutlined />} onClick={cancelEditing} />
+                      </Space>
+                    ) : (
+                      <Space>
+                        <Button type='text' icon={<EditOutlined />} onClick={() => startEditing(todo)} />
+                        <Popconfirm title="Удалить задачу?" onConfirm={() => deleteTodo(todo.id)} okText="Да" cancelText="Нет">
+                          <Button type='text' danger icon={<DeleteOutlined />} />
+                        </Popconfirm>
+                      </Space>
+                    ),
                   ]}
                 >
-                  <Checkbox checked={todo.completed} onChange={() => toggleTodo(todo.id)}>
-                    <span
-                      style={{
-                        textDecoration: todo.completed ? 'line-through' : 'none',
-                        color: todo.completed ? '#999' : '#333',
-                      }}
-                    >
-                      {todo.text}
-                    </span>
-                  </Checkbox>
+                  {editingId === todo.id ? (
+                    <Input value={editingText} onChange={(e) => setEditingText(e.target.value)} onKeyDown={handleEditKeyPress} autoFocus size='small' />
+                  ) : (
+                    <Checkbox checked={todo.completed} onChange={() => toggleTodo(todo.id)}>
+                      <span
+                        style={{
+                          textDecoration: todo.completed ? 'line-through' : 'none',
+                          color: todo.completed ? '#999' : '#333',
+                        }}
+                      >
+                        {todo.text}
+                      </span>
+                    </Checkbox>
+                  )}
                 </List.Item>
               )}
             />
