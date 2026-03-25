@@ -6,3 +6,9 @@
 
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-white text-gray-900 dark:bg-gray-800 dark:text-white;
+  }
+}

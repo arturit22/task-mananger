@@ -1,8 +1,20 @@
+import { MoonFilled, MoonOutlined } from '@ant-design/icons';
+import { useThemeStore } from '../../store/themeStore';
+import { Switch } from 'antd';
+
 export default function Navbar() {
+  const { theme, toggleTheme } = useThemeStore();
+
   return (
-    <div className="container mx-auto">
-      <div className="flex flex-row justify-between">
-        <h1 className="text-[30px]">Task Mananger</h1>
+    <div className="flex justify-between items-center p-4 shadow-md bg-white text-gray-900 dark:bg-gray-800 dark:text-white">
+      <h1 className="text-xl font-bold">Task Manager</h1>
+      <div className="flex items-center gap-4">
+        <Switch
+          checked={theme === 'dark'}
+          onChange={toggleTheme}
+          checkedChildren={<MoonFilled />}
+          unCheckedChildren={<MoonOutlined />}
+        />
       </div>
     </div>
   );

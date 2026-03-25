@@ -1,11 +1,14 @@
 import Navbar from './components/Navbar/Navbar';
-import TodoCalendar from './components/Calendar/TodoCalendar';
+import { ThemeProvider } from './components/ThemeProvider/ThemeProvider';
+import TodoCalendar from './components/TodoCalendar/TodoCalendar';
 
 export default function App() {
   return (
-    <div>
-      <Navbar />
-      <TodoCalendar />
-    </div>
+    <ThemeProvider>
+      <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-800 dark:text-white">
+        <Navbar />
+        <TodoCalendar />
+      </div>
+    </ThemeProvider>
   );
 }
