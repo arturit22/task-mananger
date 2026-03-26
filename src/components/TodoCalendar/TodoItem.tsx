@@ -71,7 +71,7 @@ export const TodoItem = ({ todo, onToggle, onDelete, onUpdate }: TodoItemProps) 
         </div>
       ) : (
         <>
-          <div className="flex items-center gap-2 flex-1">
+          <div className="flex items-center gap-2 flex-1 m-2">
             <Tag color={priorityColors[todo.priority]} className="w-20 text-center">
               {priorityLabels[todo.priority]}
             </Tag>

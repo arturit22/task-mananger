@@ -25,7 +25,7 @@ export const TodoList = ({ todos, onToggle, onDelete, onUpdate, emptyText }: Tod
       key={sortedTodos.length}
       dataSource={sortedTodos}
       renderItem={(todo) => (
-        <List.Item key={todo.id} className="hover:bg-gray-50 transition-colors">
+        <List.Item key={todo.id} className="hover:bg-gray-800 rounded-md transition-colors">
           <TodoItem todo={todo} onToggle={onToggle} onDelete={onDelete} onUpdate={onUpdate} />
         </List.Item>
       )}
